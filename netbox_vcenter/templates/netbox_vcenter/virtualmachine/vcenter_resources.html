@@ -1,0 +1,188 @@
+{% load helpers %}
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <strong>vCenter Resources</strong>
+        <span class="pull-right text-muted">cached: {{ vcenter_timestamp|date:"DATETIME_FORMAT" }}</span>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+
+        <table class="table table-hover panel-body attr-table">
+            <tr>
+                <th></th>
+                <th>NetBox</th>
+                <th>vCenter</th>
+                <th>                </th>
+            </tr>
+            <tr>
+                <td><i class="fa fa-tachometer"></i> Virtual CPUs</td>
+                <td>{{ object.vcpus|placeholder }}</td>
+                <td>
+                    {% if object.vcpus != vcenter_resources.vcpus %}
+                        <span class="text-danger">
+                        {{ vcenter_resources.vcpus|placeholder }}
+                    </span>
+                    {% else %}
+                        {{ vcenter_resources.vcpus|placeholder }}
+                    {% endif %}
+                </td>
+                <td style="width: 25%">
+                    {% if vcenter_resources.vcpus and object.vcpus != vcenter_resources.vcpus %}
+                        {% if perms.virtualization.change_virtualmachine %}
+                            <div class="pull-right">
+                                <input type="hidden" name="vcpus" value="{{ vcenter_resources.vcpus }}">
+                                <button type="submit" name="_edit"
+                                        formaction="{% url 'plugins:netbox_vcenter:virtualmachine_update' virtualmachine_id=object.id field='vcpus' %}"
+                                        class="btn btn-warning btn-xs">
+                                    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Update NetBox
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><i class="fa fa-microchip"></i> Memory</td>
+                <td>
+                    {% if object.memory %}
+                        {{ object.memory }} MB
+                    {% else %}
+                        <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if vcenter_resources.memory %}
+                        {% if object.memory != vcenter_resources.memory %}
+                            <span class="text-danger">
+                            {{ vcenter_resources.memory }} MB
+                        </span>
+                        {% else %}
+                            {{ vcenter_resources.memory }} MB
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if vcenter_resources.memory and object.memory != vcenter_resources.memory %}
+                        {% if perms.virtualization.change_virtualmachine %}
+                            <div class="pull-right">
+                                <input type="hidden" name="memory" value="{{ vcenter_resources.memory }}">
+                                <button type="submit" name="_edit"
+                                        formaction="{% url 'plugins:netbox_vcenter:virtualmachine_update' virtualmachine_id=object.id field='memory' %}"
+                                        class="btn btn-warning btn-xs">
+                                    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Update NetBox
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td><i class="fa fa-hdd-o"></i> Disk Space</td>
+                <td>
+                    {% if object.disk %}
+                        {{ object.disk }} GB
+                    {% else %}
+                        <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if vcenter_resources.disk %}
+                        {% if object.disk != vcenter_resources.disk %}
+                            <span class="text-danger">
+                            {{ vcenter_resources.disk }} GB
+                        </span>
+                        {% else %}
+                            {{ vcenter_resources.disk }} GB
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">&mdash;</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if vcenter_resources.disk and object.disk != vcenter_resources.disk %}
+                        {% if perms.virtualization.change_virtualmachine %}
+                            <div class="pull-right">
+                                <input type="hidden" name="disk" value="{{ vcenter_resources.disk }}">
+                                <button type="submit" name="_edit"
+                                        formaction="{% url 'plugins:netbox_vcenter:virtualmachine_update' virtualmachine_id=object.id field='disk' %}"
+                                        class="btn btn-warning btn-xs">
+                                    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Update NetBox
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </form>
+</div>
+
+<script type="application/javascript">
+    document.addEventListener("DOMContentLoaded", function () {
+        /*
+         * VERY ugly hack: hide the original Resources panel and put new panel in its place
+         * If this doesn't work we just have two Resource panels, so not too bad…
+         */
+        const old_panel = document.evaluate("." +
+            "//div[contains(concat(' ',normalize-space(@class),' '),' panel ')]" +
+            "/div[contains(concat(' ',normalize-space(@class),' '),' panel-heading ')]" +
+            "/*[text() = 'Resources']" +
+            "/../..",
+            document.body,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE
+        ).singleNodeValue;
+
+        const new_panel = document.evaluate("." +
+            "//div[contains(concat(' ',normalize-space(@class),' '),' panel ')]" +
+            "/div[contains(concat(' ',normalize-space(@class),' '),' panel-heading ')]" +
+            "/*[text() = 'vCenter Resources']" +
+            "/../..",
+            document.body,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE
+        ).singleNodeValue;
+
+        if (old_panel) {
+            old_panel.style.display = 'none';
+            if (new_panel) {
+                old_panel.parentNode.insertBefore(new_panel, old_panel.nextSibling);
+            }
+        }
+
+        /*
+         * VERY ugly hack 2: add power state to the status field
+         * If this doesn't work we just don't show it
+         */
+        const vm_panel = document.evaluate("." +
+            "//div[contains(concat(' ',normalize-space(@class),' '),' panel ')]" +
+            "/div[contains(concat(' ',normalize-space(@class),' '),' panel-heading ')]" +
+            "/*[text() = 'Virtual Machine']" +
+            "/../..",
+            document.body,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE
+        ).singleNodeValue;
+
+        if (vm_panel) {
+            const status = document.evaluate("." +
+                "//td[text() = 'Status']" +
+                "/following-sibling::td",
+                vm_panel,
+                null,
+                XPathResult.FIRST_ORDERED_NODE_TYPE
+            ).singleNodeValue;
+
+            if (status) {
+                {% if vcenter_resources.powered_on is True %}
+                    status.innerHTML += '<span class="label label-success">Powered on</span>'
+                {% elif vcenter_resources.powered_on is False %}
+                    status.innerHTML += '<span class="label label-danger">Powered off</span>'
+                {% endif %}
+            }
+        }
+    });
+</script>
