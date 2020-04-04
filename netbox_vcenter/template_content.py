@@ -4,7 +4,7 @@ from django.contrib.auth.context_processors import PermWrapper
 from django.template.context_processors import csrf
 
 from extras.plugins import PluginTemplateExtension
-from netbox_vcenter.background_tasks import get_vms
+from netbox_vcenter.background_tasks import get_virtual_machines
 from virtualization.models import VirtualMachine
 
 
@@ -39,7 +39,7 @@ class VirtualMachineInfo(PluginTemplateExtension):
         vm = self.context['object']  # type: VirtualMachine
 
         try:
-            all_stats = get_vms(vm.cluster.vcenter)
+            all_stats = get_virtual_machines(vm.cluster.vcenter)
             vcenter_timestamp = datetime.fromtimestamp(all_stats['timestamp'])
             vcenter_resources = all_stats['vms'][vm.name]
         except Exception:

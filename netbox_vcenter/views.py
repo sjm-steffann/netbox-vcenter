@@ -11,7 +11,7 @@ from pyVim import connect
 from pyVmomi import vim
 from rq.job import Job
 
-from netbox_vcenter.background_tasks import get_virtual_machines
+from netbox_vcenter.background_tasks import refresh_virtual_machines
 from netbox_vcenter.forms import ClusterVCenterEditForm
 from netbox_vcenter.models import ClusterVCenter
 from utilities.views import GetReturnURLMixin, ObjectDeleteView, ObjectEditView
@@ -54,7 +54,7 @@ class VirtualMachineRefresh(PermissionRequiredMixin, GetReturnURLMixin, View):
         vcenter = vm.cluster.vcenter
 
         logger.info("Forcing background task to retrieve VMs from {}".format(vcenter.server))
-        job = get_virtual_machines.delay(vcenter=vcenter, force=True)  # type: Job
+        job = refresh_virtual_machines.delay(vcenter=vcenter, force=True)  # type: Job
 
         delay = 0.2
         max_wait = config['REFRESH_WAIT']

@@ -13,7 +13,7 @@ from netbox_vcenter.models import ClusterVCenter
 logger = logging.getLogger('netbox_vcenter')
 
 
-def get_vms(vcenter: ClusterVCenter):
+def get_virtual_machines(vcenter: ClusterVCenter):
     if not vcenter:
         return None
 
@@ -27,7 +27,7 @@ def get_vms(vcenter: ClusterVCenter):
     except CacheMiss:
         # Get the VMs in the background worker, it will fill the cache
         logger.info("Initiating background task to retrieve VMs from {}".format(vcenter.server))
-        get_virtual_machines.delay(vcenter=vcenter)
+        refresh_virtual_machines.delay(vcenter=vcenter)
 
     return None
 
@@ -49,7 +49,7 @@ def get_cache_key(vcenter: ClusterVCenter):
 
 
 @job
-def get_virtual_machines(vcenter: ClusterVCenter, force=False):
+def refresh_virtual_machines(vcenter: ClusterVCenter, force=False):
     config = settings.PLUGINS_CONFIG['netbox_vcenter']
     vcenter_cache_key = get_cache_key(vcenter)
 
