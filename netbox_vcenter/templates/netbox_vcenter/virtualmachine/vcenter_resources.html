@@ -13,7 +13,7 @@
                 <th></th>
                 <th>NetBox</th>
                 <th>vCenter</th>
-                <th>                </th>
+                <th></th>
             </tr>
             <tr>
                 <td><i class="fa fa-tachometer"></i> Virtual CPUs</td>
@@ -21,8 +21,8 @@
                 <td>
                     {% if object.vcpus != vcenter_resources.vcpus %}
                         <span class="text-danger">
-                        {{ vcenter_resources.vcpus|placeholder }}
-                    </span>
+                           {{ vcenter_resources.vcpus|placeholder }}
+                       </span>
                     {% else %}
                         {{ vcenter_resources.vcpus|placeholder }}
                     {% endif %}
@@ -55,8 +55,8 @@
                     {% if vcenter_resources.memory %}
                         {% if object.memory != vcenter_resources.memory %}
                             <span class="text-danger">
-                            {{ vcenter_resources.memory }} MB
-                        </span>
+                               {{ vcenter_resources.memory }} MB
+                           </span>
                         {% else %}
                             {{ vcenter_resources.memory }} MB
                         {% endif %}
@@ -92,8 +92,8 @@
                     {% if vcenter_resources.disk %}
                         {% if object.disk != vcenter_resources.disk %}
                             <span class="text-danger">
-                            {{ vcenter_resources.disk }} GB
-                        </span>
+                                {{ vcenter_resources.disk }} GB
+                            </span>
                         {% else %}
                             {{ vcenter_resources.disk }} GB
                         {% endif %}
@@ -115,6 +115,22 @@
                         {% endif %}
                     {% endif %}
                 </td>
+            </tr>
+            <tr>
+                <td><i class="fa fa-hdd-o"></i> Network interfaces</td>
+                <td>
+                    {{ object.interfaces.all|length }}
+                </td>
+                <td>
+                    {% if object.interfaces.all|length != vcenter_resources.nics|length %}
+                        <span class="text-danger">
+                            {{ vcenter_resources.nics|length }}
+                        </span>
+                    {% else %}
+                        {{ vcenter_resources.nics|length }}
+                    {% endif %}
+                </td>
+                <td></td>
             </tr>
         </table>
     </form>

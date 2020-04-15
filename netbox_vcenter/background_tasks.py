@@ -32,12 +32,47 @@ def get_virtual_machines(vcenter: ClusterVCenter):
     return None
 
 
+def get_nic_vlan(content, dvs_cache, portgroup_cache, vm, dev):
+    dev_backing = dev.backing
+    vlan_id = None
+
+    if hasattr(dev_backing, 'port'):
+        port_group_key = dev.backing.port.portgroupKey
+        dvs_uuid = dev.backing.port.switchUuid
+        if dvs_uuid in dvs_cache:
+            dvs = dvs_cache[dvs_uuid]
+        else:
+            try:
+                dvs = content.dvSwitchManager.QueryDvsByUuid(dvs_uuid)
+                dvs_cache[dvs_uuid] = dvs
+            except Exception:
+                dvs = None
+
+        if dvs:
+            pg_obj = dvs.LookupDvPortGroup(port_group_key)
+            vlan_id = str(pg_obj.config.defaultPortConfig.vlan.vlanId)
+    else:
+        portgroup = dev.backing.network.name
+        vm_host = vm.runtime.host
+        if vm_host in portgroup_cache:
+            pgs = portgroup_cache[vm_host]
+        else:
+            pgs = vm_host.config.network.portgroup
+            portgroup_cache[vm_host] = pgs
+
+        for p in pgs:
+            if portgroup in p.key:
+                vlan_id = str(p.spec.vlanId)
+
+    return vlan_id
+
+
 def get_objects_of_type(content, obj_type):
     view_mgr = content.viewManager.CreateContainerView(content.rootFolder,
                                                        [obj_type],
                                                        True)
     try:
-        return [obj for obj in view_mgr.view]
+        return list(view_mgr.view)
     finally:
         view_mgr.Destroy()
 
@@ -83,12 +118,15 @@ def refresh_virtual_machines(vcenter: ClusterVCenter, force=False):
             'timestamp': time.time(),
             'vms': {}
         }
+        dvs_cache = {}
+        portgroup_cache = {}
         for vm in vms:
             vm_stats = {
                 'power': None,
                 'vcpus': None,
                 'memory': None,
                 'disk': None,
+                'nics': [],
             }
 
             try:
@@ -107,6 +145,15 @@ def refresh_virtual_machines(vcenter: ClusterVCenter, force=False):
                     for device in disk_devices:
                         total_capacity += device.capacityInKB
                     vm_stats['disk'] = round(total_capacity / 1048576)
+
+                for dev in vm.config.hardware.device:
+                    if isinstance(dev, vim.vm.device.VirtualEthernetCard):
+                        vlan = get_nic_vlan(content, dvs_cache, portgroup_cache, vm, dev)
+                        vm_stats['nics'].append({
+                            'label': dev.deviceInfo.label,
+                            'mac_address': dev.macAddress,
+                            'vlan': vlan,
+                        })
             except Exception:
                 logger.exception("Error while fetching virtual machine {} from {}".format(vm.name, vcenter.server))
                 continue

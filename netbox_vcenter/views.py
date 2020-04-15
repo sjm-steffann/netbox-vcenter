@@ -94,7 +94,7 @@ class VirtualMachineUpdate(PermissionRequiredMixin, GetReturnURLMixin, View):
         return redirect(self.get_return_url(request, vm))
 
 
-class TestView(View):
+class CompareVCenterView(View):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -102,12 +102,11 @@ class TestView(View):
         self._pgs_cache = {}
 
     def get(self, request):
-        service_instance = connect.ConnectNoSSL('vcenter.steffann.nl', user='sander', pwd='?GQH)7ns9mX9&AvaWw')
         try:
             self.content = service_instance.RetrieveContent()
 
             output = ''
-            vms = self.get_virtual_machines()
+            vms = self.get_objects_of_type(vim.VirtualMachine)
             for vm in vms:
                 output += f'VM {vm.name}\n'
                 for dev in vm.config.hardware.device:
@@ -124,41 +123,6 @@ class TestView(View):
                                                                 [obj_type],
                                                                 True)
         try:
-            return [obj for obj in view_mgr.view]
+            return list(view_mgr.view)
         finally:
             view_mgr.Destroy()
-
-    def get_hosts(self):
-        return self.get_objects_of_type(vim.HostSystem)
-
-    def get_virtual_machines(self):
-        return self.get_objects_of_type(vim.VirtualMachine)
-
-    def get_nic_vlan(self, vm, dev):
-        dev_backing = dev.backing
-        vlan_id = None
-
-        if hasattr(dev_backing, 'port'):
-            port_group_key = dev.backing.port.portgroupKey
-            dvs_uuid = dev.backing.port.switchUuid
-            try:
-                dvs = self.content.dvSwitchManager.QueryDvsByUuid(dvs_uuid)
-            except Exception:
-                pass
-            else:
-                pg_obj = dvs.LookupDvPortGroup(port_group_key)
-                vlan_id = str(pg_obj.config.defaultPortConfig.vlan.vlanId)
-        else:
-            port_group = dev.backing.network.name
-            vm_host = vm.runtime.host
-            if vm_host in self._pgs_cache:
-                pgs = self._pgs_cache[vm_host]
-            else:
-                pgs = vm_host.config.network.portgroup
-                self._pgs_cache[vm_host] = pgs
-
-            for p in pgs:
-                if port_group in p.key:
-                    vlan_id = str(p.spec.vlanId)
-
-        return vlan_id
