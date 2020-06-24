@@ -1,14 +1,11 @@
 import logging
 import time
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
-from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import View
-from pyVim import connect
-from pyVmomi import vim
 from rq.job import Job
 
 from netbox_vcenter.background_tasks import refresh_virtual_machines
@@ -93,36 +90,35 @@ class VirtualMachineUpdate(PermissionRequiredMixin, GetReturnURLMixin, View):
 
         return redirect(self.get_return_url(request, vm))
 
-
-class CompareVCenterView(View):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.content = None
-        self._pgs_cache = {}
-
-    def get(self, request):
-        try:
-            self.content = service_instance.RetrieveContent()
-
-            output = ''
-            vms = self.get_objects_of_type(vim.VirtualMachine)
-            for vm in vms:
-                output += f'VM {vm.name}\n'
-                for dev in vm.config.hardware.device:
-                    if isinstance(dev, vim.vm.device.VirtualEthernetCard):
-                        vlan = self.get_nic_vlan(vm, dev)
-                        output += f'  NIC {dev.deviceInfo.label} [{dev.macAddress}] = {vlan}\n'
-
-            return HttpResponse(output, "text/plain")
-        finally:
-            connect.Disconnect(service_instance)
-
-    def get_objects_of_type(self, obj_type):
-        view_mgr = self.content.viewManager.CreateContainerView(self.content.rootFolder,
-                                                                [obj_type],
-                                                                True)
-        try:
-            return list(view_mgr.view)
-        finally:
-            view_mgr.Destroy()
+# class CompareVCenterView(View):
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
+#
+#         self.content = None
+#         self._pgs_cache = {}
+#
+#     def get(self, request):
+#         try:
+#             self.content = service_instance.RetrieveContent()
+#
+#             output = ''
+#             vms = self.get_objects_of_type(vim.VirtualMachine)
+#             for vm in vms:
+#                 output += f'VM {vm.name}\n'
+#                 for dev in vm.config.hardware.device:
+#                     if isinstance(dev, vim.vm.device.VirtualEthernetCard):
+#                         vlan = self.get_nic_vlan(vm, dev)
+#                         output += f'  NIC {dev.deviceInfo.label} [{dev.macAddress}] = {vlan}\n'
+#
+#             return HttpResponse(output, "text/plain")
+#         finally:
+#             connect.Disconnect(service_instance)
+#
+#     def get_objects_of_type(self, obj_type):
+#         view_mgr = self.content.viewManager.CreateContainerView(self.content.rootFolder,
+#                                                                 [obj_type],
+#                                                                 True)
+#         try:
+#             return list(view_mgr.view)
+#         finally:
+#             view_mgr.Destroy()

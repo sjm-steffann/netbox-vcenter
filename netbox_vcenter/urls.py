@@ -1,7 +1,6 @@
 from django.urls import path
 
-from .views import (ClusterVCenterDeleteView, ClusterVCenterEditView, CompareVCenterView, VirtualMachineRefresh,
-                    VirtualMachineUpdate)
+from .views import ClusterVCenterDeleteView, ClusterVCenterEditView, VirtualMachineRefresh, VirtualMachineUpdate
 
 urlpatterns = [
     path('clusters/<int:cluster_id>/edit/', ClusterVCenterEditView.as_view(), name='cluster_vcenter_edit'),
@@ -11,5 +10,5 @@ urlpatterns = [
     path('virtualhosts/<int:virtualmachine_id>/refresh/', VirtualMachineRefresh.as_view(),
          name='virtualmachine_refresh'),
 
-    path('compare/', CompareVCenterView.as_view(), name='compare'),
+    # path('compare/', CompareVCenterView.as_view(), name='compare'),
 ]
